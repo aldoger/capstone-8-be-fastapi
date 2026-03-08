@@ -5,9 +5,16 @@ class AggregationService:
 
     def __init__(self):
         self.buffer: List[Detection] = []
+        self.max_buffer_size = 10
 
-    def add_detection(self, detection: Detection):
-        self.buffer.append(detection)
+    def add_detection(self, detections: List[Detection]):
+
+        self.buffer.extend(detections)
+
+        if len(self.buffer) >= self.max_buffer_size:
+            return self.flush()
+
+        return None
 
     def get_buffer_size(self):
         return len(self.buffer)
