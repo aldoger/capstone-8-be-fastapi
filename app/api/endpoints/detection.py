@@ -1,19 +1,18 @@
 from fastapi import APIRouter
-from app.schemas.detection_schema import AggregatedDetection
+from app.schemas.detection_schema import HeadDetection
 from app.services.aggregation_service import aggregator
 
 router = APIRouter()
 
 
 @router.post("/")
-def receive_detection(data: AggregatedDetection):
+def receive_detection(data: HeadDetection):
 
     batch = aggregator.add_detection(data.detections)
 
     if batch:
         return {
             "message": "batch ready",
-            "total_batch": len(batch),
             "detections": batch
         }
 

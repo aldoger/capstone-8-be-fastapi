@@ -1,13 +1,13 @@
 from typing import List
-from app.schemas.detection_schema import Detection
+from app.schemas.detection_schema import HeadDetection
 
 class AggregationService:
 
     def __init__(self):
-        self.buffer: List[Detection] = []
+        self.buffer: List[HeadDetection] = []
         self.max_buffer_size = 10
 
-    def add_detection(self, detections: List[Detection]):
+    def add_detection(self, detections: List[HeadDetection]):
 
         self.buffer.extend(detections)
 
