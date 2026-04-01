@@ -8,13 +8,7 @@ router = APIRouter()
 @router.post("")
 def receive_detection(data: HeadDetection):
 
-    batch = aggregator.add_detection(data.result)
-
-    if batch:
-        return {
-            "message": "batch ready",
-            "detections": batch
-        }
+    aggregator.add_detection(data.result)
 
     return {
         "message": "stored",
