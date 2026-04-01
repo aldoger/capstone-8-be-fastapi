@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.endpoints import detection
+from app.routers.detection import detection
 
 app = FastAPI()
 
