@@ -5,10 +5,10 @@ from app.services.aggregation_service import aggregator
 router = APIRouter()
 
 
-@router.post("/")
+@router.post("")
 def receive_detection(data: HeadDetection):
 
-    batch = aggregator.add_detection(data.detections)
+    batch = aggregator.add_detection(data.result)
 
     if batch:
         return {
@@ -18,16 +18,19 @@ def receive_detection(data: HeadDetection):
 
     return {
         "message": "stored",
-        "buffer_size": aggregator.get_buffer_size()
     }
 
 
-@router.get("/")
+@router.get("")
 def get_detection_data():
 
     data = aggregator.get_detection_data()
 
+    if data is None:
+        return {
+            "detection": None
+        }
+
     return {
-        "total": len(data),
-        "detections": data
+        "detection": data
     }
