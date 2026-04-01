@@ -27,7 +27,7 @@ while True:
     fps = 1 / (current_time - last_time) if last_time > 0 else 0
     last_time = current_time
 
-    result = model(frame)
+    result = model.track(frame, persist=True)
     annotated_frame = result[0].plot()
     boxes = result[0].boxes
 
@@ -60,9 +60,7 @@ while True:
         accumulated_heads = 0
         frame_count = 0
 
-    print(f"Heads: {total_heads}, FPS: {fps:.2f}")
-
-    cv2.imshow(model_name, annotated_frame)
+    cv2.imshow("YOLO",annotated_frame)
 
     if cv2.waitKey(1) == ord('q'):
         break
