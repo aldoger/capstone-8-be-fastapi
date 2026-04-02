@@ -7,6 +7,9 @@ import requests
 from datetime import datetime
 from ultralytics import YOLO
 import sys
+import os
+
+os.makedirs("pictures", exist_ok=True)
 
 pick_model = sys.argv[1]
 API_URL = "http://localhost:8000/detection"
@@ -78,6 +81,9 @@ while True:
     total_heads = head_counts
 
     if current_time - interval_start >= 10:
+        
+        cv2.imwrite(f'pictures/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png', frame)
+
         payload = {
             "source": "webcam",
             "model_type": model_type,
