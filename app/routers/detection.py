@@ -8,7 +8,7 @@ router = APIRouter()
 @router.post("")
 def receive_detection(data: HeadDetection):
 
-    aggregator.add_detection(data.result)
+    aggregator.add_detection(data)
 
     return {
         "message": "stored",

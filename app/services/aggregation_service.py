@@ -1,4 +1,3 @@
-from typing import List
 from app.schemas.detection_schema import HeadDetection
 
 class AggregationService:
