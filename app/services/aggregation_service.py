@@ -13,7 +13,7 @@ class AggregationService:
         self.buffer =  detection
 
         try:
-            result = send_batch(self.core_url, self.buffer)
+            send_batch(self.core_url, self.buffer)
         except Exception as e:
             print("Error sending payload: ", e)
 
