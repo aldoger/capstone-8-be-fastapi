@@ -1,16 +1,16 @@
 import requests
-from fastapi import File, UploadFile
+import cv2
 
 def send_batch(url: str, payload: dict):
     response = requests.post(url, json=payload)
     return response.json()
 
-def send_snapshot(url: str, image: UploadFile = File(...)):
-    file_content = await image.read()
+def send_snapshot(url: str, filename: str, frame):
+    _, buffer = cv2.imencode(".png", frame)
 
-    files = {"file": (file.filename, file_content, file.content_type)}
+    files = {
+        "snapshot_image": (filename, buffer.tobytes(), "image/png")
+    }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, files=files)
-
-    return {"status": response.status_code, "response": response.json()}
+    response = requests.post(url, files=files)
+    print(response.status_code, response.text)

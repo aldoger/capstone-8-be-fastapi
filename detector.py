@@ -3,12 +3,14 @@ import supervision as sv
 from rfdetr import RFDETRNano
 from rfdetr.assets.coco_classes import COCO_CLASSES
 import time
-import requests
 from datetime import datetime
 from ultralytics import YOLO
 import sys
 import os
-from .app.utils.http_client import send_snapshot, send_batch
+from app.utils.http_client import send_snapshot, send_batch
+from dotenv import load_dotenv
+
+load_dotenv()
 
 os.makedirs("snapshots", exist_ok=True)
 
@@ -89,7 +91,7 @@ while True:
 
         try:
             send_batch(f"{base_url}/detection", payload=payload)
-            send_snapshot(f"{base_url}/snapshots", image=frame)
+            send_snapshot(f"{base_url}/snapshots", snapshot_filename, frame)
         except Exception as e:
             print("Error sending data:", e)
 
