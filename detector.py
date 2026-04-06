@@ -1,7 +1,7 @@
 import cv2
 import supervision as sv
 from rfdetr import RFDETRNano
-import torch
+from rfdetr.assets.coco_classes import COCO_CLASSES
 import time
 import requests
 from datetime import datetime
@@ -9,28 +9,18 @@ from ultralytics import YOLO
 import sys
 import os
 
-os.makedirs("pictures", exist_ok=True)
+os.makedirs("snapshots", exist_ok=True)
 
 pick_model = sys.argv[1]
-API_URL = "http://localhost:8000/detection"
+base_url = os.getenv("BASE_URL")
+core_url = os.getenv("BE_CORE_URL")
 
 if pick_model == "yolo":
     model = YOLO("yolo.pt")
     model_type = "YOLO"
 
 else:
-    model = RFDETRNano(pretrained=False)
-
-    checkpoint = torch.load("checkpoint_best_total.pth", map_location="cpu")
-
-    state_dict = checkpoint.get("model", checkpoint)
-
-    new_state_dict = {}
-    for k, v in state_dict.items():
-        new_state_dict[k.replace("module.", "")] = v
-
-    model.model.load_state_dict(new_state_dict)
-    model.model.eval()
+    model = RFDETRNano(pretrain_weights="checkpoint_best_total.pth")
 
     box_annotator = sv.BoxAnnotator()
     label_annotator = sv.LabelAnnotator()
@@ -44,6 +34,13 @@ last_time = 0
 interval_start = time.time()
 
 total_heads = 0
+
+def send_snapshot(snap):
+    try:
+        response = requests.post(f'{core_url}/snapshots', snap)
+    except Exception as e:
+        print("Error sending snapshot: ", e)
+
 
 while True:
     ret, frame = cap.read()
@@ -71,9 +68,9 @@ while True:
 
         head_counts = sum(1 for c in detections.class_id if c == 1)
 
-        labels = [str(c) for c in detections.class_id]
+        labels = [COCO_CLASSES[class_id] for class_id in detections.class_id]
 
-        annotated_frame = box_annotator.annotate(frame.copy(), detections)
+        annotated_frame = box_annotator.annotate(frame_rgb, detections)
         annotated_frame = label_annotator.annotate(
             annotated_frame, detections, labels
         )
@@ -82,7 +79,8 @@ while True:
 
     if current_time - interval_start >= 10:
         
-        cv2.imwrite(f'pictures/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png', frame)
+        snapshot_filename = f'snapshots/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+        cv2.imwrite(snapshot_filename, frame)
 
         payload = {
             "source": "webcam",
@@ -95,7 +93,7 @@ while True:
         }
 
         try:
-            response = requests.post(API_URL, json=payload)
+            response = requests.post(f"{base_url}/detection", json=payload)
             print("Sent:", payload, "Response:", response.status_code)
         except Exception as e:
             print("Error sending data:", e)
