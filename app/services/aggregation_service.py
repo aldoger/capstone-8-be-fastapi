@@ -1,5 +1,5 @@
 from app.schemas.detection_schema import HeadDetection
-import requests
+from app.utils.http_client import send_batch
 import os
 
 class AggregationService:
@@ -12,21 +12,15 @@ class AggregationService:
 
         self.buffer =  detection
 
-        self.send_detection()
+        try:
+            result = send_batch(self.core_url, self.buffer)
+        except Exception as e:
+            print("Error sending payload: ", e)
 
         return None
 
     def get_detection_data(self):
         return self.buffer
-    
-    def send_detection(self):
-        try:
-            requests.post(self.core_url, self.buffer)
-        except Exception as e:
-            print("Error sending data:", e)
-
-
-
 
 
 aggregator = AggregationService()

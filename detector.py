@@ -8,6 +8,7 @@ from datetime import datetime
 from ultralytics import YOLO
 import sys
 import os
+from .app.utils.http_client import send_snapshot, send_batch
 
 os.makedirs("snapshots", exist_ok=True)
 
@@ -34,12 +35,6 @@ last_time = 0
 interval_start = time.time()
 
 total_heads = 0
-
-def send_snapshot(snap):
-    try:
-        response = requests.post(f'{core_url}/snapshots', snap)
-    except Exception as e:
-        print("Error sending snapshot: ", e)
 
 
 while True:
@@ -93,8 +88,8 @@ while True:
         }
 
         try:
-            response = requests.post(f"{base_url}/detection", json=payload)
-            print("Sent:", payload, "Response:", response.status_code)
+            send_batch(f"{base_url}/detection", payload=payload)
+            send_snapshot(f"{base_url}/snapshots", image=frame)
         except Exception as e:
             print("Error sending data:", e)
 
