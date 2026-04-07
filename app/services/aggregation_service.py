@@ -9,7 +9,7 @@ class AggregationService:
         self.snapshot_data: SnapshotData | None = None
         self.core_url = os.getenv("BE_CORE_URL")
 
-    def add_detection(self, detection: DetectionResult, snapshot_data: SnapshotData):
+    def add_detection(self, detection: DetectionResult, snapshot_data: SnapshotData, filename, frame):
 
         self.buffer =  detection
         self.snapshot_data = snapshot_data

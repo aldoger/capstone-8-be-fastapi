@@ -94,7 +94,7 @@ while True:
         }
 
         try:
-            send_snapshot(f"{core_url}/logs", snapshot_filename, frame=frame)
+            send_snapshot(f"{core_url}/snapshots", payload_snapshot, snapshot_filename, frame=frame)
         except Exception as e:
             print("Error sending data:", e)
 

@@ -13,7 +13,7 @@ def send_snapshot(url: str, snapshot_data, filename, frame):
     }
 
     data = {
-        "snapshot_data": json.dump(snapshot_data)
+        "snapshot_data": json.dumps(snapshot_data)
     }
 
     requests.post(url, files=files, data=data)
