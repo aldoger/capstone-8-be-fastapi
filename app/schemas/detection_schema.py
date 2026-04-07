@@ -5,6 +5,3 @@ class DetectionResult(BaseModel):
     head_count: int
     current_fps: str
     timestamp: datetime
-
-class HeadDetection(BaseModel):
-    result: DetectionResult

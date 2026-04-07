@@ -80,17 +80,13 @@ while True:
         cv2.imwrite(snapshot_filename, frame)
 
         payload = {
-            "source": "webcam",
-            "model_type": model_type,
-            "result": {
-                "head_count": int(total_heads),
-                "fps": f"{fps:.2f}",
-                "timestamp": datetime.now().isoformat()
-            }
+            "head_count": int(total_heads),
+            "current_fps": f"{fps:.2f}",
+            "timestamp": datetime.now().isoformat()
         }
 
         try:
-            send_batch(f"{base_url}/detection", payload=payload)
+            send_snapshot(f"{core_url}/logs", snapshot_filename, frame=frame)
         except Exception as e:
             print("Error sending data:", e)
 
