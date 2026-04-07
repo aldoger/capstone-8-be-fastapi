@@ -13,7 +13,8 @@ class AggregationService:
         self.buffer =  detection
 
         try:
-            send_batch(self.core_url, self.buffer)
+            payload = self.buffer.model_dump(mode="json")
+            send_batch(f"{self.core_url}/logs", payload=payload)
         except Exception as e:
             print("Error sending payload: ", e)
 

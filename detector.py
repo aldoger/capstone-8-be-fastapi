@@ -91,7 +91,6 @@ while True:
 
         try:
             send_batch(f"{base_url}/detection", payload=payload)
-            send_snapshot(f"{base_url}/snapshots", snapshot_filename, frame)
         except Exception as e:
             print("Error sending data:", e)
 
