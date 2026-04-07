@@ -13,18 +13,3 @@ def receive_detection(data: DetectionResult):
     return {
         "message": "stored",
     }
-
-
-@router.get("")
-def get_detection_data():
-
-    data = aggregator.get_detection_data()
-
-    if data is None:
-        return {
-            "detection": None
-        }
-
-    return {
-        "detection": data
-    }

@@ -9,6 +9,7 @@ import sys
 import os
 from app.utils.http_client import send_snapshot, send_batch
 from dotenv import load_dotenv
+from app.utils.generate import  generate_random_int_id, generate_random_uuid 
 
 load_dotenv()
 
@@ -79,10 +80,17 @@ while True:
         snapshot_filename = f'snapshots/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
         cv2.imwrite(snapshot_filename, frame)
 
-        payload = {
+        payload_detection = {
             "head_count": int(total_heads),
             "current_fps": f"{fps:.2f}",
             "timestamp": datetime.now().isoformat()
+        }
+
+        payload_snapshot = {
+            "id": generate_random_int_id(),
+            "source_id": generate_random_uuid(),
+            "head_count_at_time": int(total_heads),
+            "image_path": snapshot_filename
         }
 
         try:
