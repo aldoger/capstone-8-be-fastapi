@@ -7,7 +7,7 @@ from datetime import datetime
 from ultralytics import YOLO
 import sys
 import os
-from app.utils.http_client import send_snapshot, send_batch
+import requests
 from dotenv import load_dotenv
 from app.utils.generate import  generate_random_int_id, generate_random_uuid 
 
@@ -18,6 +18,9 @@ os.makedirs("snapshots", exist_ok=True)
 pick_model = sys.argv[1]
 base_url = os.getenv("BASE_URL")
 core_url = os.getenv("BE_CORE_URL")
+
+def send_data(payload_detection, payload_snapshot, filename, frame):
+    requests.post(f"{base_url}/detection", payload_detection, payload_snapshot, filename, frame)
 
 if pick_model == "yolo":
     model = YOLO("yolo.pt")
@@ -94,7 +97,7 @@ while True:
         }
 
         try:
-            send_snapshot(f"{core_url}/snapshots", payload_snapshot, snapshot_filename, frame=frame)
+            send_data(payload_detection, payload_snapshot, snapshot_filename, frame)
         except Exception as e:
             print("Error sending data:", e)
 

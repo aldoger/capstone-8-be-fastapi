@@ -15,8 +15,8 @@ class AggregationService:
         self.snapshot_data = snapshot_data
 
         try:
-            payload = self.buffer.model_dump(mode="json")
-            send_batch(f"{self.core_url}/logs", payload=payload)
+            self.send_head_detection_data()
+            self.send_snapshot_data()
         except Exception as e:
             print("Error sending payload: ", e)
 
