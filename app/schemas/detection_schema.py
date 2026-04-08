@@ -9,11 +9,6 @@ class DetectionResult(BaseModel):
     timestamp: datetime
 
 class SnapshotData(BaseModel):
-    id: UUID
     source_id: UUID
     image_path: str
     head_count_at_time: int
-
-class SnapshotWithDetection(BaseModel):
-    snapshot: SnapshotData
-    detection: DetectionResult

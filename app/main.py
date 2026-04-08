@@ -8,4 +8,6 @@ from app.routers.detection import router
 
 app = FastAPI()
 
+@app.on_event("startup")
+
 app.include_router(router=router, prefix="/detection", tags=["Detection"])

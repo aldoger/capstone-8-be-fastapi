@@ -7,9 +7,8 @@ from datetime import datetime
 from ultralytics import YOLO
 import sys
 import os
-import requests
+import requests, json
 from dotenv import load_dotenv
-from app.utils.http_client import send_snapshot
 
 load_dotenv()
 
@@ -17,19 +16,28 @@ os.makedirs("snapshots", exist_ok=True)
 
 pick_model = sys.argv[1]
 base_url = os.getenv("BASE_URL")
-core_url = os.getenv("BE_CORE_URL")
 
-import requests
+def send_detection(payload_detection):
+    requests.post(
+        f"{base_url}/detection",
+        json=payload_detection 
+    )
 
-def send_data(payload_detection, payload_snapshot):
-    payload = {
-        "snapshot": payload_snapshot,
-        "detection": payload_detection
+def send_snapshot(payload_snapshot, filename, frame):
+    _, buffer = cv2.imencode(".png", frame)
+
+    files = {
+        "snapshot_image": (filename, buffer.tobytes(), "image/png")
+    }
+
+    data = {
+        "snapshot": json.dumps(payload_snapshot)  
     }
 
     requests.post(
-        f"{base_url}/detection",
-        json=payload  
+        f"{base_url}/snapshot",
+        files=files,
+        data=data
     )
 
 if pick_model == "yolo":
@@ -90,12 +98,13 @@ while True:
 
     if current_time - interval_start >= 10:
         
-        snapshot_filename = f'photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+        snapshot_filename = f'snapshots/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+        cv2.imwrite(snapshot_filename, frame)
 
         payload_detection = {
             "source_id": "4673e5a7-7f75-48d1-bf75-1b76f4a21480",
             "head_count": int(total_heads),
-            "current_fps": float(fps),
+            "current_fps": float(fps),  
             "timestamp": datetime.now().isoformat()
         }
 
@@ -106,8 +115,8 @@ while True:
         }
 
         try:
-            # send_data(payload_detection, payload_snapshot)
-            send_snapshot(f"{core_url}/snapshots", payload_snapshot, snapshot_filename, frame)
+            send_detection(payload_detection)
+            send_snapshot(payload_snapshot, snapshot_filename, frame)
         except Exception as e:
             print("Error sending data:", e)
 
