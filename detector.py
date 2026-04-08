@@ -9,7 +9,7 @@ import sys
 import os
 import requests
 from dotenv import load_dotenv
-from app.utils.generate import  generate_random_int_id, generate_random_uuid 
+from app.utils.http_client import send_snapshot
 
 load_dotenv()
 
@@ -19,8 +19,18 @@ pick_model = sys.argv[1]
 base_url = os.getenv("BASE_URL")
 core_url = os.getenv("BE_CORE_URL")
 
-def send_data(payload_detection, payload_snapshot, filename, frame):
-    requests.post(f"{base_url}/detection", payload_detection, payload_snapshot, filename, frame)
+import requests
+
+def send_data(payload_detection, payload_snapshot):
+    payload = {
+        "snapshot": payload_snapshot,
+        "detection": payload_detection
+    }
+
+    requests.post(
+        f"{base_url}/detection",
+        json=payload  
+    )
 
 if pick_model == "yolo":
     model = YOLO("yolo.pt")
@@ -80,24 +90,24 @@ while True:
 
     if current_time - interval_start >= 10:
         
-        snapshot_filename = f'snapshots/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
-        cv2.imwrite(snapshot_filename, frame)
+        snapshot_filename = f'photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
 
         payload_detection = {
+            "source_id": "4673e5a7-7f75-48d1-bf75-1b76f4a21480",
             "head_count": int(total_heads),
-            "current_fps": f"{fps:.2f}",
+            "current_fps": float(fps),
             "timestamp": datetime.now().isoformat()
         }
 
         payload_snapshot = {
-            "id": generate_random_int_id(),
-            "source_id": generate_random_uuid(),
+            "source_id": "4673e5a7-7f75-48d1-bf75-1b76f4a21480",
             "head_count_at_time": int(total_heads),
             "image_path": snapshot_filename
         }
 
         try:
-            send_data(payload_detection, payload_snapshot, snapshot_filename, frame)
+            # send_data(payload_detection, payload_snapshot)
+            send_snapshot(f"{core_url}/snapshots", payload_snapshot, snapshot_filename, frame)
         except Exception as e:
             print("Error sending data:", e)
 

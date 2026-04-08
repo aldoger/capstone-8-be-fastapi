@@ -1,13 +1,19 @@
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 
 class DetectionResult(BaseModel):
+    source_id: UUID
     head_count: int
-    current_fps: str
+    current_fps: float
     timestamp: datetime
 
 class SnapshotData(BaseModel):
-    id: int
-    source_id: str
+    id: UUID
+    source_id: UUID
     image_path: str
     head_count_at_time: int
+
+class SnapshotWithDetection(BaseModel):
+    snapshot: SnapshotData
+    detection: DetectionResult
