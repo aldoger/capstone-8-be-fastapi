@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-import requests
 import os
 
 load_dotenv()
@@ -19,17 +18,27 @@ app = FastAPI()
 @app.on_event("startup")
 async def get_source():
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{core_url}/sources")
-        data = response.json()
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(f"{core_url}/sources", timeout=5.0)
+                response.raise_for_status()
 
-        sources = [
-            SourceData(
-                id=src["id"],
-                type=src["type"]
-            )
-            for src in data["sources"]
-        ]
-        
-        detection_service.build_source_map(sources)
+                data = response.json()
+
+                sources = [
+                    SourceData(
+                        id=src["id"],
+                        type=src["type"]
+                    )
+                    for src in data["sources"]
+                ]
+
+                detection_service.build_source_map(sources)
+
+                print("[STARTUP] Sources loaded")
+
+        except Exception as e:
+            print("[FATAL] Failed to fetch sources:", e)
+            raise RuntimeError("Startup failed: cannot load sources")
 
 app.include_router(router=router, prefix="/detection", tags=["Detection"])

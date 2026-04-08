@@ -1,4 +1,4 @@
-from app.schemas.detection_schema import DetectionResult, SnapshotData
+from app.schemas.detection_schema import DetectionData, SnapshotData
 from app.schemas.source_schema import SourceData
 from app.utils.http_client import send_batch, send_snapshot
 import os
@@ -6,7 +6,7 @@ import os
 class DetectionService:
 
     def __init__(self):
-        self.buffer: DetectionResult | None = None
+        self.buffer: DetectionData | None = None
         self.snapshot_data: SnapshotData | None = None
         self.source_map: dict[str, str] = {}
         self.core_url = os.getenv("BE_CORE_URL")
@@ -28,7 +28,7 @@ class DetectionService:
         key = source_type.lower().replace(" ", "")
         return self.source_map.get(key)
 
-    def send_head_detection(self, data: DetectionResult, type_source: str):
+    def send_head_detection(self, data: DetectionData, type_source: str):
 
         source_id = self.find_source_id(type_source)
 

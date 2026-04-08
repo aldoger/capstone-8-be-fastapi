@@ -3,10 +3,12 @@ from datetime import datetime
 from uuid import UUID
 
 class DetectionResult(BaseModel):
-    source_id: UUID
     head_count: int
     current_fps: float
     timestamp: datetime
+
+class DetectionData(DetectionResult):
+    source_id: UUID
 
 class SnapshotData(BaseModel):
     source_id: UUID

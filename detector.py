@@ -16,13 +16,12 @@ os.makedirs("snapshots", exist_ok=True)
 
 pick_model = sys.argv[1]
 base_url = os.getenv("BASE_URL")
-source = "Web Cam"
+source = "webcam"
 
 def send_detection(payload_detection):
     requests.post(
-        f"{base_url}/detection",
-        json=payload_detection,
-        params=source
+        f"{base_url}/head-detection/{source}",
+        json=payload_detection
     )
 
 def send_snapshot(payload_snapshot, filename, frame):
@@ -33,14 +32,13 @@ def send_snapshot(payload_snapshot, filename, frame):
     }
 
     data = {
-        "snapshot": json.dumps(payload_snapshot)  
+        "snapshot": json.dumps(payload_snapshot)
     }
 
     requests.post(
-        f"{base_url}/snapshot",
+        f"{base_url}/snapshot/{source}",
         files=files,
-        data=data,
-        params=source
+        data=data
     )
 
 if pick_model == "yolo":
@@ -116,8 +114,8 @@ while True:
         }
 
         try:
-            send_detection(payload_detection, source)
-            send_snapshot(payload_snapshot, snapshot_filename, frame, source)
+            send_detection(payload_detection)
+            send_snapshot(payload_snapshot, snapshot_filename, frame)
         except Exception as e:
             print("Error sending data:", e)
 
