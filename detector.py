@@ -16,11 +16,13 @@ os.makedirs("snapshots", exist_ok=True)
 
 pick_model = sys.argv[1]
 base_url = os.getenv("BASE_URL")
+source = "Web Cam"
 
 def send_detection(payload_detection):
     requests.post(
         f"{base_url}/detection",
-        json=payload_detection 
+        json=payload_detection,
+        params=source
     )
 
 def send_snapshot(payload_snapshot, filename, frame):
@@ -37,7 +39,8 @@ def send_snapshot(payload_snapshot, filename, frame):
     requests.post(
         f"{base_url}/snapshot",
         files=files,
-        data=data
+        data=data,
+        params=source
     )
 
 if pick_model == "yolo":
@@ -102,21 +105,19 @@ while True:
         cv2.imwrite(snapshot_filename, frame)
 
         payload_detection = {
-            "source_id": "4673e5a7-7f75-48d1-bf75-1b76f4a21480",
             "head_count": int(total_heads),
             "current_fps": float(fps),  
             "timestamp": datetime.now().isoformat()
         }
 
         payload_snapshot = {
-            "source_id": "4673e5a7-7f75-48d1-bf75-1b76f4a21480",
             "head_count_at_time": int(total_heads),
             "image_path": snapshot_filename
         }
 
         try:
-            send_detection(payload_detection)
-            send_snapshot(payload_snapshot, snapshot_filename, frame)
+            send_detection(payload_detection, source)
+            send_snapshot(payload_snapshot, snapshot_filename, frame, source)
         except Exception as e:
             print("Error sending data:", e)
 

@@ -6,13 +6,14 @@ from app.services.detection_service import detection_service
 router = APIRouter()
 
 
-@router.post("/head-detection")
-def receive_head_detection(data: DetectionResult):
-    detection_service.send_head_detection(data=data)
+@router.post("/head-detection/{source}")
+def receive_head_detection(data: DetectionResult, source: str):
+    detection_service.send_head_detection(data=data, type_source=source)
     return {"status": "ok"}
 
-@router.post("/snapshot")
+@router.post("/snapshot/{source}")
 async def receive_snapshot_detection(
+    source: str,
     snapshot_image: UploadFile = File(...),
     snapshot: str = Form(...)
 ):
@@ -22,6 +23,7 @@ async def receive_snapshot_detection(
 
         detection_service.send_snapshot_data(
             snapshot_data,
+            source,
             snapshot_image.filename,
             image_bytes
         )
