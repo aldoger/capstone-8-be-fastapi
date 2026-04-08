@@ -12,8 +12,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-os.makedirs("snapshots", exist_ok=True)
-
 pick_model = sys.argv[1]
 base_url = os.getenv("BASE_URL")
 source = "webcam"
@@ -100,7 +98,6 @@ while True:
     if current_time - interval_start >= 10:
         
         snapshot_filename = f'snapshots/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
-        cv2.imwrite(snapshot_filename, frame)
 
         payload_detection = {
             "head_count": int(total_heads),
