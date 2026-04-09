@@ -9,6 +9,7 @@ import sys
 import os
 import requests, json
 from dotenv import load_dotenv
+import app.core.stream_state as state
 
 load_dotenv()
 
@@ -59,8 +60,8 @@ interval_start = time.time()
 
 total_heads = 0
 
-
 while True:
+
     ret, frame = cap.read()
     if not ret:
         break
@@ -79,6 +80,8 @@ while True:
         if boxes is not None and boxes.cls is not None:
             head_counts = int((boxes.cls == 1).sum())
 
+        state.frame_state = frame
+
     else:
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -92,6 +95,8 @@ while True:
         annotated_frame = label_annotator.annotate(
             annotated_frame, detections, labels
         )
+
+        state.frame_state = frame
 
     total_heads = head_counts
 
