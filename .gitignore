@@ -3,3 +3,5 @@ venv
 *.pth
 *.pt
 snapshots/
+__pycache__/
+*.pyc
