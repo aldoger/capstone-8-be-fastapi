@@ -6,7 +6,7 @@ class CameraService:
     def __init__(self):
         pass
 
-    def generate():
+    def generate(self):
         while True:
             if frame_state is None:
                 continue

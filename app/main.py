@@ -4,7 +4,8 @@ import os
 load_dotenv()
 
 from fastapi import FastAPI
-from app.routers.detection import router
+import app.routers.detection as detection_router 
+import app.routers.stream as stream_router
 from app.schemas.source_schema import SourceData
 from app.services.detection_service import detection_service
 import httpx
@@ -41,4 +42,5 @@ async def get_source():
             print("[FATAL] Failed to fetch sources:", e)
             raise RuntimeError("Startup failed: cannot load sources")
 
-app.include_router(router=router, prefix="/detection", tags=["Detection"])
+app.include_router(router=detection_router.router, prefix="/detection", tags=["Detection"])
+app.include_router(router=stream_router.router, prefix="/camera", tags=["Stream"])
