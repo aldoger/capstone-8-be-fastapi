@@ -1,20 +1,24 @@
-from app.core.stream_state import frame_state
-import cv2
+import time
+from app.core.frame_manager import frame_manager
+
 
 class CameraService:
 
-    def __init__(self):
-        pass
-
     def generate(self):
+        """Generator that yields MJPEG frames for StreamingResponse."""
         while True:
-            if frame_state is None:
+            jpeg = frame_manager.get_jpeg()
+
+            if jpeg is None:
+                time.sleep(0.03)
                 continue
 
-            _, buffer = cv2.imencode(".jpg", frame_state)
-            frame = buffer.tobytes()
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" +
+                jpeg +
+                b"\r\n"
+            )
 
-            yield (b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
 
 camera_service = CameraService()

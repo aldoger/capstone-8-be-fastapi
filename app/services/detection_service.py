@@ -1,13 +1,13 @@
-from app.schemas.detection_schema import DetectionData, SnapshotData
+from datetime import datetime
+from app.schemas.detection_schema import DetectionResult, SnapshotData
 from app.schemas.source_schema import SourceData
 from app.utils.http_client import send_batch, send_snapshot
 import os
 
+
 class DetectionService:
 
     def __init__(self):
-        self.buffer: DetectionData | None = None
-        self.snapshot_data: SnapshotData | None = None
         self.source_map: dict[str, str] = {}
         self.core_url = os.getenv("BE_CORE_URL")
 
@@ -28,34 +28,61 @@ class DetectionService:
         key = source_type.lower().replace(" ", "")
         return self.source_map.get(key)
 
-    def send_head_detection(self, data: DetectionData, type_source: str):
+    # --- HTTP endpoint handlers (called from routers) ---
 
+    def send_head_detection(self, data: DetectionResult, type_source: str):
         source_id = self.find_source_id(type_source)
 
-        self.buffer =  data
-
         try:
-            payload = self.buffer.model_dump(mode="json")
+            payload = data.model_dump(mode="json")
             payload["source_id"] = source_id
             send_batch(f"{self.core_url}/logs", payload=payload)
         except Exception as e:
-            print("Error sending payload: ", e)
-    
-    def send_snapshot_data(self, data: SnapshotData, type_source: str, filename, frame):
+            print("Error sending detection payload: ", e)
 
+    def send_snapshot_data(self, data: SnapshotData, type_source: str, filename, frame):
         source_id = self.find_source_id(type_source)
 
-        self.snapshot_data = data
-
         try:
-            payload = self.snapshot_data.model_dump(mode="json")
+            payload = data.model_dump(mode="json")
             payload["source_id"] = source_id
             send_snapshot(f"{self.core_url}/snapshots", payload, filename, frame)
         except Exception as e:
-            print("Error sending payload: ", e)
+            print("Error sending snapshot payload: ", e)
 
-        payload = self.snapshot_data.model_dump(mode="json")
-        send_snapshot(f"{self.core_url}/snapshots", payload, filename, frame)
+    # --- Direct callbacks (called from detector thread, no HTTP self-call) ---
+
+    def handle_detection(self, head_count: int, fps: float, source_type: str = "webcam"):
+        """Called directly by detector thread to send detection data to BE Core."""
+        source_id = self.find_source_id(source_type)
+
+        payload = {
+            "head_count": head_count,
+            "current_fps": fps,
+            "timestamp": datetime.now().isoformat(),
+            "source_id": source_id,
+        }
+
+        try:
+            send_batch(f"{self.core_url}/logs", payload=payload)
+        except Exception as e:
+            print(f"[DETECTION] Error sending to BE Core: {e}")
+
+    def handle_snapshot(self, head_count: int, frame, source_type: str = "webcam"):
+        """Called directly by detector thread to send snapshot to BE Core."""
+        source_id = self.find_source_id(source_type)
+
+        filename = f'snapshots/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+        payload = {
+            "head_count_at_time": head_count,
+            "image_path": filename,
+            "source_id": source_id,
+        }
+
+        try:
+            send_snapshot(f"{self.core_url}/snapshots", payload, filename, frame)
+        except Exception as e:
+            print(f"[SNAPSHOT] Error sending to BE Core: {e}")
 
 
 detection_service = DetectionService()
