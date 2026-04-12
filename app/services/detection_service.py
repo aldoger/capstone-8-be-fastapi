@@ -11,6 +11,14 @@ class DetectionService:
         self.source_map: dict[str, str] = {}
         self.core_url = os.getenv("BE_CORE_URL")
 
+    def add_source(self, source: SourceData) -> bool:
+        seen_source = self.find_source_id(source_type=source.type)
+        if seen_source is not None:
+            return False
+        key = source.type.lower().replace(" ", "")
+        self.source_map[key] = source.id
+        return True
+
     def build_source_map(self, sources: list[SourceData]):
         seen = set()
         self.source_map = {}
