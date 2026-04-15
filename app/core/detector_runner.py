@@ -2,44 +2,62 @@ import threading
 import cv2
 import time
 import os
+import numpy as np
+from uuid import UUID
+
+from app.core.frame_manager import FrameManager
 
 
 class DetectorRunner:
-    """Runs object detection in a background thread, integrated with FastAPI."""
+    """Runs object detection in a background thread, integrated with FastAPI.
+    
+    Each runner owns its own FrameManager and operates on a single camera source.
+    """
 
-    def __init__(self, model_name: str = "yolo"):
+    def __init__(self, id: UUID, type_source: str, url: str | None, model_name: str = "yolo"):
+        self.id = id
+        self.type_source = type_source
+        self.url = url
         self.model_name = model_name
         self._thread: threading.Thread | None = None
         self._running = False
         self._model = None
+        self._frame_manager = FrameManager()
 
-    def start(self, frame_manager, on_detection_callback, on_snapshot_callback):
+    def start(self, on_detection_callback, on_snapshot_callback):
         """Start detection loop in a daemon background thread.
 
         Args:
-            frame_manager: FrameManager instance to push annotated frames into.
-            on_detection_callback: fn(head_count: int, fps: float) called every interval.
-            on_snapshot_callback: fn(head_count: int, frame: np.ndarray) called every interval.
+            on_detection_callback: fn(source_id: UUID, head_count: int, fps: float) called every interval.
+            on_snapshot_callback: fn(source_id: UUID, head_count: int, frame: np.ndarray) called every interval.
         """
         self._running = True
         self._thread = threading.Thread(
             target=self._run_loop,
-            args=(frame_manager, on_detection_callback, on_snapshot_callback),
+            args=(on_detection_callback, on_snapshot_callback),
             daemon=True,
         )
         self._thread.start()
-        print(f"[DETECTOR] Started with model: {self.model_name}")
+        print(f"[DETECTOR {self.id}] Started with model: {self.model_name}")
 
     def stop(self):
         """Signal the detection loop to stop and wait for the thread to finish."""
         self._running = False
         if self._thread:
             self._thread.join(timeout=5)
-            print("[DETECTOR] Stopped")
+            print(f"[DETECTOR {self.id}] Stopped")
+
+    def get_jpeg(self) -> bytes | None:
+        """Get the latest JPEG frame from this runner's FrameManager."""
+        return self._frame_manager.get_jpeg()
+
+    def get_frame(self) -> np.ndarray | None:
+        """Get the latest raw numpy frame from this runner's FrameManager."""
+        return self._frame_manager.get_frame()
 
     def _load_model(self):
         """Load the AI model (runs inside the background thread)."""
-        print(f"[DETECTOR] Loading model: {self.model_name}...")
+        print(f"[DETECTOR {self.id}] Loading model: {self.model_name}...")
         if self.model_name == "yolo":
             from ultralytics import YOLO
 
@@ -48,24 +66,33 @@ class DetectorRunner:
             from rfdetr import RFDETRNano
 
             self._model = RFDETRNano(pretrain_weights="checkpoint_best_total.pth")
-        print(f"[DETECTOR] Model loaded successfully")
+        print(f"[DETECTOR {self.id}] Model loaded successfully")
 
-    def _run_loop(self, frame_manager, on_detection, on_snapshot):
+    def _run_loop(self, on_detection, on_snapshot):
         """Main detection loop — captures frames, runs inference, updates frame manager."""
         try:
             self._load_model()
         except Exception as e:
-            print(f"[DETECTOR] Failed to load model: {e}")
+            print(f"[DETECTOR {self.id}] Failed to load model: {e}")
             return
 
-        source = os.getenv("CAMERA_SOURCE", "0")
-        cap = cv2.VideoCapture(int(source) if source.isdigit() else source)
+        # Determine camera source
+        if self.type_source == "RTSP":
+            if self.url is None:
+                print(f"[DETECTOR {self.id}] RTSP source has no URL, aborting")
+                return
+            source = self.url
+        else:
+            source = os.getenv("CAMERA_SOURCE", "0")
+            source = int(source) if source.isdigit() else source
+
+        cap = cv2.VideoCapture(source)
 
         if not cap.isOpened():
-            print(f"[DETECTOR] Failed to open camera source: {source}")
+            print(f"[DETECTOR {self.id}] Failed to open camera source: {source}")
             return
 
-        print(f"[DETECTOR] Camera opened, starting detection loop")
+        print(f"[DETECTOR {self.id}] Camera opened, starting detection loop")
         last_time = 0
         interval_start = time.time()
 
@@ -83,23 +110,23 @@ class DetectorRunner:
             try:
                 annotated_frame, head_count = self._detect(frame)
             except Exception as e:
-                print(f"[DETECTOR] Inference error: {e}")
+                print(f"[DETECTOR {self.id}] Inference error: {e}")
                 continue
 
-            # Update shared frame buffer (thread-safe)
-            frame_manager.update(annotated_frame)
+            # Update this runner's own frame buffer (thread-safe)
+            self._frame_manager.update(annotated_frame)
 
             # Periodic detection + snapshot callback (every 10s)
             if current_time - interval_start >= 10:
                 try:
-                    on_detection(head_count, fps)
-                    on_snapshot(head_count, frame)
+                    on_detection(self.id, head_count, fps)
+                    on_snapshot(self.id, head_count, frame)
                 except Exception as e:
-                    print(f"[DETECTOR] Callback error: {e}")
+                    print(f"[DETECTOR {self.id}] Callback error: {e}")
                 interval_start = current_time
 
         cap.release()
-        print("[DETECTOR] Camera released")
+        print(f"[DETECTOR {self.id}] Camera released")
 
     def _detect(self, frame):
         """Run detection on a single frame. Returns (annotated_frame, head_count)."""

@@ -8,16 +8,11 @@ from fastapi import FastAPI
 import app.routers.stream as stream_router
 import app.routers.source as source_router
 from app.schemas.source_schema import SourceData
-from app.services.detection_service import detection_service
-from app.core.frame_manager import frame_manager
-from app.core.detector_runner import DetectorRunner
+from app.core.detection_source import detection_source
 import httpx
 
 
 core_url = os.getenv("BE_CORE_URL")
-model_name = os.getenv("MODEL_NAME", "yolo")
-
-detector = DetectorRunner(model_name=model_name)
 
 
 @asynccontextmanager
@@ -34,31 +29,31 @@ async def lifespan(app: FastAPI):
                 SourceData(
                     id=src["id"],
                     name=src["name"],
-                    type=src["type"]
+                    type=src["type"],
+                    url=src.get("url"),
                 )
                 for src in data["sources"]
             ]
 
-            detection_service.build_source_map(sources)
-            print("[STARTUP] Sources loaded")
+            # Start a DetectorRunner thread for each source
+            for source in sources:
+                detection_source.add_detector_runner(
+                    id=source.id,
+                    type_source=source.type,
+                    url=source.url,
+                )
+
+            print(f"[STARTUP] {len(sources)} sources loaded, detection threads started")
 
         except Exception as e:
             print("[FATAL] Failed to fetch sources:", e)
             raise RuntimeError("Startup failed: cannot load sources")
 
-    # Start detector thread
-    detector.start(
-        frame_manager=frame_manager,
-        on_detection_callback=detection_service.handle_detection,
-        on_snapshot_callback=detection_service.handle_snapshot,
-    )
-    print("[STARTUP] Detector thread started")
-
     yield
 
     # --- Shutdown ---
-    detector.stop()
-    print("[SHUTDOWN] Detector thread stopped")
+    detection_source.stop_all()
+    print("[SHUTDOWN] All detection threads stopped")
 
 
 app = FastAPI(lifespan=lifespan)

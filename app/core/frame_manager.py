@@ -27,6 +27,3 @@ class FrameManager:
         """Get raw numpy frame (for snapshot)."""
         with self._lock:
             return self._frame.copy() if self._frame is not None else None
-
-
-frame_manager = FrameManager()

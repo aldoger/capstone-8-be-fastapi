@@ -5,6 +5,7 @@ class SourceData(BaseModel):
     id: UUID
     name: str
     type: str
+    url: str | None = None
 
 
 class ProbeResponse(BaseModel):

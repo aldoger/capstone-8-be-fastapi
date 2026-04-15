@@ -1,12 +1,16 @@
 from fastapi import APIRouter
 from app.schemas.source_schema import SourceData, ProbeResponse
-from app.services.detection_service import detection_service
+from app.core.detection_source import detection_source
 
 router = APIRouter()
 
 @router.post("")
 def receive_source(data: SourceData):
-    result = detection_service.add_source(data)
+    result = detection_source.add_detector_runner(
+        id=data.id,
+        type_source=data.type,
+        url=data.url
+    )
     if result is False:
         return ProbeResponse(
             exists=True,
@@ -14,5 +18,5 @@ def receive_source(data: SourceData):
         )
     return ProbeResponse(
         exists=False,
-        detail="source added"
+        detail="source added and detection thread started"
     )
