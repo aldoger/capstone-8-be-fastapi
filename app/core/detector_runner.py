@@ -76,7 +76,7 @@ class DetectorRunner:
             print(f"[DETECTOR {self.id}] Failed to load model: {e}")
             return
 
-        # Determine camera source
+
         if self.type_source == "RTSP":
             if self.url is None:
                 print(f"[DETECTOR {self.id}] RTSP source has no URL, aborting")
