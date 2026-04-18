@@ -25,6 +25,13 @@ async def lifespan(app: FastAPI):
 
             data = response.json()
 
+            if not data or not data.get("sources"):
+                print("[STARTUP] No sources found, skipping detector startup")
+                yield
+                detection_source.stop_all()
+                print("[SHUTDOWN] All detection threads stopped")
+                return
+
             sources = [
                 SourceData(
                     id=src["id"],

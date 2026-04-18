@@ -63,9 +63,15 @@ class DetectorRunner:
 
             self._model = YOLO("yolo.pt")
         else:
-            from rfdetr import RFDETRNano
+            from rfdetr import RFDETRSmall
 
-            self._model = RFDETRNano(pretrain_weights="checkpoint_best_total.pth")
+            self._model = RFDETRSmall(
+                pretrain_weights="checkpoint_best_total.pth",
+                num_classes=2,
+                num_queries=500,
+                num_select=500
+            )
+            self._model.optimize_for_inference()
         print(f"[DETECTOR {self.id}] Model loaded successfully")
 
     def _run_loop(self, on_detection, on_snapshot):
@@ -142,12 +148,11 @@ class DetectorRunner:
             return annotated, count
         else:
             import supervision as sv
-            from rfdetr.assets.coco_classes import COCO_CLASSES
 
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             detections = self._model.predict(frame_rgb, threshold=0.5)
             count = sum(1 for c in detections.class_id if c == 1)
-            labels = [COCO_CLASSES[cid] for cid in detections.class_id]
+            labels = ["person" for _ in detections.class_id]
 
             box_ann = sv.BoxAnnotator()
             label_ann = sv.LabelAnnotator()
