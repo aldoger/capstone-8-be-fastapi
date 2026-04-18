@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.core.detector_runner import DetectorRunner
 from app.services.sender_service import sender_service
+from app.schemas.source_schema import ProbeResponse
 
 
 class DetectionSource:
@@ -16,7 +17,7 @@ class DetectionSource:
         self._runners: dict[str, DetectorRunner] = {}
         self._lock = threading.Lock()
 
-    def add_detector_runner(self, id: UUID, type_source: str, url: str | None) -> bool:
+    def add_detector_runner(self, id: UUID, type_source: str, url: str | None) -> ProbeResponse:
         """Create and start a new DetectorRunner for a given source.
         
         Returns False if a runner with the same ID already exists.
@@ -24,7 +25,13 @@ class DetectionSource:
         key = str(id)
         with self._lock:
             if key in self._runners:
-                return False
+                return ProbeResponse(
+                    exists=True,
+                    detail="Source already exist",
+                    url="",
+                    resolution="",
+                    fps=0
+                )
             runner = DetectorRunner(id=id, type_source=type_source, url=url)
             runner.start(
                 on_detection_callback=sender_service.handle_detection,
@@ -32,7 +39,14 @@ class DetectionSource:
             )
             self._runners[key] = runner
         print(f"[DETECTION_SOURCE] Runner added for source {id}")
-        return True
+        camera_url = f"http://localhost:8000/camera/stream/{id}"
+        return ProbeResponse(
+            exists=False,
+            detail="Source added",
+            resolution="720p",
+            url=camera_url,
+            fps=13
+        )
 
     def get_runner(self, id: str) -> DetectorRunner | None:
         """Get a runner by source ID. Returns None if not found."""
