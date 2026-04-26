@@ -1,6 +1,6 @@
-import requests
 import cv2
 import json
+import requests
 
 def send_batch(url: str, payload):
     requests.post(url, json=payload)

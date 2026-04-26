@@ -4,33 +4,22 @@ import time
 import os
 import numpy as np
 from uuid import UUID
+import httpx
 
 from app.core.frame_manager import FrameManager
 
 
 class DetectorRunner:
-    """Runs object detection in a background thread, integrated with FastAPI.
-    
-    Each runner owns its own FrameManager and operates on a single camera source.
-    """
-
-    def __init__(self, id: UUID, type_source: str, url: str | None, model_name: str = "yolo"):
+    def __init__(self, id: UUID, type_source: str, url: str | None):
         self.id = id
         self.type_source = type_source
         self.url = url
-        self.model_name = model_name
         self._thread: threading.Thread | None = None
         self._running = False
-        self._model = None
+        self.model_url = os.getenv("BE_MODEL_URL")
         self._frame_manager = FrameManager()
 
     def start(self, on_detection_callback, on_snapshot_callback):
-        """Start detection loop in a daemon background thread.
-
-        Args:
-            on_detection_callback: fn(source_id: UUID, head_count: int, fps: float) called every interval.
-            on_snapshot_callback: fn(source_id: UUID, head_count: int, frame: np.ndarray) called every interval.
-        """
         self._running = True
         self._thread = threading.Thread(
             target=self._run_loop,
@@ -38,51 +27,21 @@ class DetectorRunner:
             daemon=True,
         )
         self._thread.start()
-        print(f"[DETECTOR {self.id}] Started with model: {self.model_name}")
+        print(f"[DETECTOR {self.id}] Started")
 
     def stop(self):
-        """Signal the detection loop to stop and wait for the thread to finish."""
         self._running = False
         if self._thread:
             self._thread.join(timeout=5)
             print(f"[DETECTOR {self.id}] Stopped")
 
     def get_jpeg(self) -> bytes | None:
-        """Get the latest JPEG frame from this runner's FrameManager."""
         return self._frame_manager.get_jpeg()
 
     def get_frame(self) -> np.ndarray | None:
-        """Get the latest raw numpy frame from this runner's FrameManager."""
         return self._frame_manager.get_frame()
 
-    def _load_model(self):
-        """Load the AI model (runs inside the background thread)."""
-        print(f"[DETECTOR {self.id}] Loading model: {self.model_name}...")
-        if self.model_name == "yolo":
-            from ultralytics import YOLO
-
-            self._model = YOLO("yolo.pt")
-        else:
-            from rfdetr import RFDETRSmall
-
-            self._model = RFDETRSmall(
-                pretrain_weights="checkpoint_best_total.pth",
-                num_classes=2,
-                num_queries=500,
-                num_select=500
-            )
-            self._model.optimize_for_inference()
-        print(f"[DETECTOR {self.id}] Model loaded successfully")
-
     def _run_loop(self, on_detection, on_snapshot):
-        """Main detection loop — captures frames, runs inference, updates frame manager."""
-        try:
-            self._load_model()
-        except Exception as e:
-            print(f"[DETECTOR {self.id}] Failed to load model: {e}")
-            return
-
-
         if self.type_source == "RTSP":
             if self.url is None:
                 print(f"[DETECTOR {self.id}] RTSP source has no URL, aborting")
@@ -119,10 +78,8 @@ class DetectorRunner:
                 print(f"[DETECTOR {self.id}] Inference error: {e}")
                 continue
 
-            # Update this runner's own frame buffer (thread-safe)
             self._frame_manager.update(annotated_frame)
 
-            # Periodic detection + snapshot callback (every 10s)
             if current_time - interval_start >= 10:
                 try:
                     on_detection(self.id, head_count, fps)
@@ -134,28 +91,24 @@ class DetectorRunner:
         cap.release()
         print(f"[DETECTOR {self.id}] Camera released")
 
-    def _detect(self, frame):
-        """Run detection on a single frame. Returns (annotated_frame, head_count)."""
-        if self.model_name == "yolo":
-            result = self._model.track(frame, persist=True)
-            annotated = result[0].plot()
-            boxes = result[0].boxes
-            count = (
-                int((boxes.cls == 1).sum())
-                if boxes is not None and boxes.cls is not None
-                else 0
+    def _detect(self, frame: np.ndarray) -> tuple[np.ndarray, int]:
+        """Send frame to Vast.ai model, return (annotated_frame, head_count)."""
+        _, encoded = cv2.imencode(".jpg", frame)
+        jpg_bytes = encoded.tobytes()
+
+        with httpx.Client() as client:
+            response = client.post(
+                self.model_url,
+                files={"file": ("frame.jpg", jpg_bytes, "image/jpeg")},
             )
-            return annotated, count
-        else:
-            import supervision as sv
+            response.raise_for_status()
 
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            detections = self._model.predict(frame_rgb, threshold=0.5)
-            count = sum(1 for c in detections.class_id if c == 1)
-            labels = ["person" for _ in detections.class_id]
+        data = response.json()
 
-            box_ann = sv.BoxAnnotator()
-            label_ann = sv.LabelAnnotator()
-            annotated = box_ann.annotate(frame_rgb, detections)
-            annotated = label_ann.annotate(annotated, detections, labels)
-            return annotated, count
+        # Decode annotated image from response
+        annotated_bytes = np.frombuffer(data["annotated_image"], dtype=np.uint8)
+        annotated_frame = cv2.imdecode(annotated_bytes, cv2.IMREAD_COLOR)
+
+        head_count = data["count"]
+
+        return annotated_frame, head_count
