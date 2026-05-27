@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Node
+node_modules/
+
+# Build
+build/
+dist/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+
+# binaries
+*.so
+*.a
+*.o
+*.out
+
+# models
+*.onnx
+*.pt
+*.bin
