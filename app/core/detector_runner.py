@@ -6,7 +6,7 @@ import numpy as np
 from uuid import UUID
 from config import Config
 from app.core.frame_manager import FrameManager
-from app.core.model import ONNXRuntime
+from app.core.model import ONNXRuntime, get_shared_runtime
 from app.core.tracker import Tracker
 
 
@@ -65,9 +65,9 @@ class DetectorRunner:
         return self._frame_manager.get_frame()
 
     def _load_model(self):
-        """Load the ONNX model and tracker (runs inside the background thread)."""
-        print(f"[DETECTOR {self.id}] Loading model: {self.model_name}...")
-        self._model = ONNXRuntime(
+        """Acquire the shared ONNX model and create a per-runner tracker."""
+        print(f"[DETECTOR {self.id}] Acquiring shared model: {self.model_name}...")
+        self._model = get_shared_runtime(
             model_path=Config.MODEL_PATH,
             inference_size=Config.INFERENCE_SIZE,
             conf_threshold=Config.CONFIDENCE_THRESHOLD,

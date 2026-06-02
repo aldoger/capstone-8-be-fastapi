@@ -1,7 +1,21 @@
+import threading
 import onnxruntime as ort
 import numpy as np
 import cv2
 import supervision as sv
+
+_model_lock = threading.Lock()
+_shared_model: "ONNXRuntime | None" = None
+
+
+def get_shared_runtime(model_path, inference_size, conf_threshold, target_class_ids) -> "ONNXRuntime":
+    global _shared_model
+    if _shared_model is None:
+        with _model_lock:
+            if _shared_model is None:
+                _shared_model = ONNXRuntime(model_path, inference_size, conf_threshold, target_class_ids)
+    return _shared_model
+
 
 class ONNXRuntime:
     def __init__(self, model_path, inference_size, conf_threshold, target_class_ids):
