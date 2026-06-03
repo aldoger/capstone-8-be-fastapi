@@ -5,6 +5,7 @@ load_dotenv()
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+import app.routers.health as health_router
 import app.routers.stream as stream_router
 import app.routers.source as source_router
 from app.schemas.source_schema import SourceData
@@ -65,5 +66,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.include_router(router=health_router.router, prefix="/health-check", tags=["Health"])
 app.include_router(router=source_router.router, prefix="/probe", tags=["Sources"])
 app.include_router(router=stream_router.router, prefix="/camera", tags=["Stream"])
