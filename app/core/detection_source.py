@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.core.detector_runner import DetectorRunner
 from app.services.sender_service import sender_service
+from app.services.go2rtc_service import go2rtc_service
 from app.schemas.source_schema import ProbeResponse
 
 
@@ -25,6 +26,13 @@ class DetectionSource:
         key = str(id)
         exists: bool
         exists=False
+
+        # Every link is handed to go2rtc first; the runner then reads the
+        # RTSP URL go2rtc serves back instead of the raw source link.
+        if url is not None:
+            url = go2rtc_service.add_stream(stream_id=key, source_url=url)
+            type_source = "RTSP"
+
         with self._lock:
             if key in self._runners:
                 exists = True

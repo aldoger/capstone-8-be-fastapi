@@ -1,0 +1,14 @@
+services:
+  go2rtc:
+    build: .
+    container_name: go2rtc
+    restart: unless-stopped
+
+    ports:
+      - "1984:1984"          # web UI / API / WebRTC signaling
+      - "8554:8554"          # RTSP
+      - "8555:8555/tcp"      # WebRTC/TCP fallback
+      - "8555:8555/udp"      # WebRTC/UDP
+
+    volumes:
+      - ./go2rtc.yaml:/config/go2rtc.yaml

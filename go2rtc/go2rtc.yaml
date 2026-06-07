@@ -1,0 +1,12 @@
+api:
+  listen: ":1984"
+
+rtsp:
+  listen: ":8554"
+
+webrtc:
+  listen: ":8555"
+
+streams:
+  4e8d5f2f-72d6-4f9f-9a62-0f6f91f0a8b1:
+    - ffmpeg:https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/1780841946/ei/eiklaqGrLYjMssUP9qa9sQU/ip/182.8.122.134/id/DjdUEyjx8GM.4/itag/96/source/yt_live_broadcast/requiressl/yes/ratebypass/yes/live/1/sgoap/gir%3Dyes%3Bitag%3D140/sgovp/gir%3Dyes%3Bitag%3D137/rqh/1/hls_chunk_host/rr1---sn-2uuxa3vh-n0cs.googlevideo.com/xpc/EgVo2aDSNQ%3D%3D/bui/ARmQxEV0VZKICANfLVuOfcSp4gKsHQmYCUsMP48rM9UNyKKF2ey3YWDhbXkY0ABO-jS_8IZPFmDKJW3O/spc/SQ-umshFEh12Ec89EIiir202CN-FbDCR7Ewxbq8AZcH_YjbFHg/vprv/1/reg/0/playlist_type/DVR/initcwndbps/1393750/met/1780820346,/mh/SI/mm/44/mn/sn-2uuxa3vh-n0cs/ms/lva/mv/m/mvi/1/pcm2cms/yes/pl/24/rms/lva,lva/dover/11/pacing/0/keepalive/yes/fexp/51565115,51565682/mt/1780819955/sparams/expire,ei,ip,id,itag,source,requiressl,ratebypass,live,sgoap,sgovp,rqh,xpc,bui,spc,vprv,reg,playlist_type/sig/AHEqNM4wRAIgVtPpxzGHJwv2CrN4-LtdOkWLKwsKMl6mWETudVGGqSMCIBQ3svdwdHtS_kVPO6nqAOOXGcXRzf3puwJx6cJH6R_h/lsparams/hls_chunk_host,initcwndbps,met,mh,mm,mn,ms,mv,mvi,pcm2cms,pl,rms/lsig/APaTxxMwRgIhAJOfRG2QXjtHbD0WukTgpbHYYwGiE80Ve0nSuBRNFYW1AiEAh-V6pVYsVhc4TCH_u3mH1Cg-WVMp4MJ2tL4YVVgagHQ%3D/playlist/index.m3u8#video=h264

@@ -21,42 +21,52 @@ async def lifespan(app: FastAPI):
     # --- Startup ---
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(f"{core_url}/sources", timeout=5.0)
+            response = await client.get(
+                f"{core_url}/sources",
+                timeout=5.0
+            )
+
             response.raise_for_status()
 
             data = response.json()
 
             if not data or not data.get("sources"):
                 print("[STARTUP] No sources found, skipping detector startup")
-                yield
-                detection_source.stop_all()
-                print("[SHUTDOWN] All detection threads stopped")
-                return
 
-            sources = [
-                SourceData(
-                    id=src["id"],
-                    name=src["name"],
-                    type=src["type"],
-                    url=src.get("url"),
+            else:
+                sources = [
+                    SourceData(
+                        id=src["id"],
+                        name=src["name"],
+                        type=src["type"],
+                        url=src.get("url"),
+                    )
+                    for src in data["sources"]
+                ]
+
+                # Start detector threads
+                for source in sources:
+                    detection_source.add_detector_runner(
+                        id=source.id,
+                        type_source=source.type,
+                        url=source.url,
+                    )
+
+                print(
+                    f"[STARTUP] {len(sources)} sources loaded, "
+                    "detection threads started"
                 )
-                for src in data["sources"]
-            ]
 
-            # Start a DetectorRunner thread for each source
-            for source in sources:
-                detection_source.add_detector_runner(
-                    id=source.id,
-                    type_source=source.type,
-                    url=source.url,
-                )
+        except httpx.TimeoutException:
+            print("[WARNING] Source server timeout, skipping source loading")
 
-            print(f"[STARTUP] {len(sources)} sources loaded, detection threads started")
+        except httpx.ConnectError:
+            print("[WARNING] Cannot connect to source server, skipping source loading")
 
         except Exception as e:
-            print("[FATAL] Failed to fetch sources:", e)
-            raise RuntimeError("Startup failed: cannot load sources")
+            print(f"[WARNING] Failed to load sources: {e}")
 
+    # Server still starts normally
     yield
 
     # --- Shutdown ---
