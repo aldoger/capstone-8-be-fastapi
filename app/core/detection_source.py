@@ -1,5 +1,6 @@
 import threading
 from uuid import UUID
+import os
 
 from app.core.detector_runner import DetectorRunner
 from app.services.sender_service import sender_service
@@ -17,6 +18,7 @@ class DetectionSource:
     def __init__(self):
         self._runners: dict[str, DetectorRunner] = {}
         self._lock = threading.Lock()
+        self._base_url = os.getenv("BASE_URL") 
 
     def add_detector_runner(self, id: UUID, type_source: str, url: str | None) -> ProbeResponse:
         """Create and start a new DetectorRunner for a given source.
@@ -43,7 +45,7 @@ class DetectionSource:
             )
             self._runners[key] = runner
         print(f"[DETECTION_SOURCE] Runner added for source {id}")
-        camera_url = f"http://localhost:8000/camera/stream/{id}"
+        camera_url = f"http://{self._base_url}/camera/stream/{id}"
         return ProbeResponse(
             exists=exists,
             detail="Source added",
